@@ -20,7 +20,7 @@ namespace QuickStack
     {
         public const string Guid = "com.focabr.gk2.quickstack";
         public const string Name = "GK2 QuickStack";
-        public const string Version = "0.1.0";
+        public const string Version = "0.1.1";
 
         /// <summary>How often the hint row is re-checked while standing at a chest (seconds).</summary>
         private const float HintRefreshInterval = 0.25f;
@@ -199,7 +199,7 @@ namespace QuickStack
 
         // ------------------------------------------------------------------ hint row
 
-        /// <summary>Called after the game builds the chest's hint ("[E] Open"): adds "[R] Move identical items".</summary>
+        /// <summary>Called after the game builds the chest's hint ("[E] Open"): adds "[R] Move all identical items".</summary>
         internal void AddHint(Wgo wgo, InteractionInfos infos)
         {
             if (infos == null || !showHint.Value || stackKey.Value == KeyCode.None || !IsOrdinaryChest(wgo))
@@ -212,7 +212,17 @@ namespace QuickStack
             {
                 return;
             }
-            infos.Add(new InteractionInfo($"[{KeyLabel(stackKey.Value)}] {LLBase.L("tip_move_similar_items")}"));
+            infos.Add(new InteractionInfo($"[{KeyLabel(stackKey.Value)}] {HintText()}"));
+        }
+
+        /// <summary>
+        /// The name the game gives the button inside the chest window (its mouse-over text, "Move all identical
+        /// items."), in the game's language, without the final period: world hints have none ("[E] Open").
+        /// </summary>
+        private static string HintText()
+        {
+            string text = LLBase.L("btn_hint_move_all_identical_items");
+            return string.IsNullOrEmpty(text) ? text : text.TrimEnd('.', '\u3002', ' ');
         }
 
         /// <summary>

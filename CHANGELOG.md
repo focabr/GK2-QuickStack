@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- The option now has the same name as the button inside the chest window ("Move all identical items", in the game's
+  language). 0.1.0 used the game's gamepad tip for that button, which is worded differently ("Move All Duplicates").
+
 ## 0.1.0
 
 First version.

@@ -7,7 +7,7 @@ chest already holds goes into it, without opening the chest window.
 
 ```
 [E] Open
-[R] Move identical items
+[R] Move all identical items
 ```
 
 It is the chest window's own "move all identical items" button, on a key:

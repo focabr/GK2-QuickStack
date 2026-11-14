@@ -9,7 +9,9 @@ items" without opening the window. One file: `src/QuickStack/Plugin.cs`.
   `CanTakeAnyItemsExistingInMeFromOtherInventory` = is there anything to move.
 - Hint: `ChestInteractionHandler.FormInteractionInfo()` returns `InteractionInfos` (private `list`); the widget shows at
   most 2 rows (`UIInteractionHintWidgetData`). Keyboard prompt text = `"[E] " + LLBase.L(key)`
-  (`ControllerIconLibrary.GetTextIcon`; gamepad = `<sprite name=...>`). Row text: game key `tip_move_similar_items`.
+  (`ControllerIconLibrary.GetTextIcon`; gamepad = `<sprite name=...>`). Row text: game key `btn_hint_move_all_identical_items`
+  (the button's mouse-over text, final period trimmed; pt-BR "Mover todos os itens iguais"). `tip_move_similar_items` is
+  the gamepad tip of the same button and is worded differently ("Mover Todas as Duplicatas") - the user wants the former.
 - The hint is only rebuilt on `Wgo.DrawWidgets()` → the plugin calls it when "can stack" changes.
 - Special chests with their own windows (`ChestInteractionHandler.Interact`): ids `garden_bags_storage_1..3`,
   `conveyor_wine_beer_pallet`, `WGODef.conveyorType` 4 and 9.
