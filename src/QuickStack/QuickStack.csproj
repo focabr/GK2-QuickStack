@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- GK2 runs Mono (Unity 6000.3) with a .NET Standard 2.1 profile. -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>QuickStack</AssemblyName>
+    <RootNamespace>QuickStack</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <DebugType>embedded</DebugType>
+    <Deterministic>true</Deterministic>
+    <PathMap>$(MSBuildProjectDirectory)=QuickStack/</PathMap>
+    <IsPackable>false</IsPackable>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
+  </PropertyGroup>
+
+  <!-- DLLs from the local game installation: compile-time only (Private=false => never copied or redistributed). -->
+  <ItemGroup>
+    <Reference Include="BepInEx"><HintPath>$(BepInExDir)/core/BepInEx.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(BepInExDir)/core/0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(GameManagedDir)/UnityEngine.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(GameManagedDir)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.InputLegacyModule"><HintPath>$(GameManagedDir)/UnityEngine.InputLegacyModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Assembly-CSharp"><HintPath>$(GameManagedDir)/Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="LazyBearTechnology"><HintPath>$(GameManagedDir)/LazyBearTechnology.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <Target Name="ValidateGamePath" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="'$(GamePath)' == ''" Text="GamePath is not set. Create GamePath.props (see GamePath.props.example), set the GK2_GAME_PATH variable or use -p:GamePath=..." />
+    <Error Condition="!Exists('$(GameManagedDir)/Assembly-CSharp.dll')" Text="Assembly-CSharp.dll not found in '$(GameManagedDir)'. Check GamePath." />
+    <Error Condition="!Exists('$(BepInExDir)/core/BepInEx.dll')" Text="BepInEx not found in '$(BepInExDir)/core'." />
+  </Target>
+
+</Project>
