@@ -4,6 +4,8 @@
 
 - The option now has the same name as the button inside the chest window ("Move all identical items", in the game's
   language). 0.1.0 used the game's gamepad tip for that button, which is worded differently ("Move All Duplicates").
+- README: explains that the key is changed in the settings file (`BepInEx\config\com.focabr.gk2.quickstack.cfg`,
+  `StackKey`), not in the game's Controls window.
 
 ## 0.1.0
 

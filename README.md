@@ -31,18 +31,30 @@ The game ships with BepInEx since version 1.011.
    `Graveyard Keeper 2\BepInEx\plugins\QuickStack\QuickStack.dll`.
 3. Start the game.
 
+## Changing the key
+
+The key is **not** in the game's Controls window (that window only lists the game's own keys). It is changed in the
+mod's settings file:
+
+1. Close the game.
+2. Open `Graveyard Keeper 2\BepInEx\config\com.focabr.gk2.quickstack.cfg` in Notepad
+   (the file is created the first time the game runs with the mod).
+3. Change the line `StackKey = R` to the key you want, for example `StackKey = G` or `StackKey = Mouse3`.
+   The file lists every accepted key name.
+4. Save and start the game.
+
+Another mod already using **R** (for example a quick stack to every chest of the area)? Change `StackKey` here or the
+key in the other mod.
+
 ## Settings
 
-`Graveyard Keeper 2\BepInEx\config\com.focabr.gk2.quickstack.cfg` (created on the first run):
+All in the same file, `BepInEx\config\com.focabr.gk2.quickstack.cfg`:
 
 | Setting | Default | What it does |
 |---|---|---|
 | `StackKey` | `R` | Key that stores the matching items. `None` turns the mod off. |
 | `ShowHint` | `true` | Shows the option next to the chest. |
 | `ShowMessage` | `true` | Shows the message with the number of items stored. |
-
-Another mod already using **R** (for example a quick stack to every chest of the area)? Change `StackKey` here or the
-key in the other mod.
 
 ## Build
 
