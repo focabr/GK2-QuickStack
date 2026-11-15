@@ -15,8 +15,8 @@ It is the chest window's own "move all identical items" button, on a key:
 - **Only the chest in front of you.** You choose where things go, chest by chest.
 - **Same rules as the button.** The mod calls the game's own function, so the chest's filters, free space and stack
   sizes apply exactly as in the window. Items inside your bags and on your tool belt stay with you.
-- **The option only shows when there is something to store.** After storing, a short message tells you how many items
-  went in.
+- **The option only shows when there is something to store.** After storing, the game's own notification list shows
+  one line per item that went in: its icon, name and amount.
 - **Nothing is created, deleted or written to your save.**
 
 Seed-bag storages, the wine pallet and conveyor chests open their own windows and are left alone.
@@ -54,7 +54,8 @@ All in the same file, `BepInEx\config\com.focabr.gk2.quickstack.cfg`:
 |---|---|---|
 | `StackKey` | `R` | Key that stores the matching items. `None` turns the mod off. |
 | `ShowHint` | `true` | Shows the option next to the chest. |
-| `ShowMessage` | `true` | Shows the message with the number of items stored. |
+| `ShowMessage` | `true` | Shows the message after storing. `false` = no message at all. |
+| `MessageStyle` | `Items` | `Items` = one line per item stored (icon, name, amount). `Total` = a single line with the total. |
 
 ## Build
 

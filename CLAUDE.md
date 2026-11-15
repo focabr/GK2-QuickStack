@@ -16,6 +16,11 @@ items" without opening the window. One file: `src/QuickStack/Plugin.cs`.
 - Special chests with their own windows (`ChestInteractionHandler.Interact`): ids `garden_bags_storage_1..3`,
   `conveyor_wine_beer_pallet`, `WGODef.conveyorType` 4 and 9.
 - Message: private `UINotificator.ShowSimpleTextNotification(string locale, string text)` by reflection.
+- Item lines (0.2.0): `LazyPooler.GetObject<UIItemRemoveNotification>()` (or `UIItemAddNotification` when the game has no
+  pool for the first: `LazyPooler.pools` checked once), set `ItemId` / `DisplayingCount`, private
+  `UINotificator.ShowNotification(UIBaseNotification)`, then overwrite the private `countLabel` (the game writes "-N" / "+N"
+  and hides it for 1; the user wants the plain amount, no sign, no line limit). The game merges pickups into a displayed
+  `UIItemAddNotification` with the same item id (`HandleAddItems`) - the reason the "remove" widget is preferred.
 
 ## Rules
 - Code, CHANGELOG and docs in English; talk to the user in pt-BR.

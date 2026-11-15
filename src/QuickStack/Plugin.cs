@@ -5,6 +5,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
 using LazyBearTechnology;
+using TMPro;
 using UnityEngine;
 
 namespace QuickStack
@@ -20,7 +21,7 @@ namespace QuickStack
     {
         public const string Guid = "com.focabr.gk2.quickstack";
         public const string Name = "GK2 QuickStack";
-        public const string Version = "0.1.1";
+        public const string Version = "0.2.0";
 
         /// <summary>How often the hint row is re-checked while standing at a chest (seconds).</summary>
         private const float HintRefreshInterval = 0.25f;
@@ -30,6 +31,7 @@ namespace QuickStack
         private ConfigEntry<KeyCode> stackKey;
         private ConfigEntry<bool> showHint;
         private ConfigEntry<bool> showMessage;
+        private ConfigEntry<MessageStyle> messageStyle;
 
         private Harmony harmony;
         private Wgo lastChest;
@@ -45,7 +47,9 @@ namespace QuickStack
             showHint = Config.Bind("General", "ShowHint", true,
                 "Show the option next to the chest (under \"Open\") while there is something to store.");
             showMessage = Config.Bind("General", "ShowMessage", true,
-                "Show a short message with the number of items stored.");
+                "Show a message after storing. false = no message at all.");
+            messageStyle = Config.Bind("General", "MessageStyle", MessageStyle.Items,
+                "Items = one line per item stored, with its icon, name and amount. Total = a single line with the total.");
             stackKey.SettingChanged += (_, __) => RedrawCurrentChest();
             showHint.SettingChanged += (_, __) => RedrawCurrentChest();
 
@@ -160,41 +164,67 @@ namespace QuickStack
         {
             Inventory player = MainGame.PlayerData.inventory;
             Inventory target = chest.Data.Inventory;
-            int moved = 0;
+            var moved = new List<KeyValuePair<string, int>>();
+            int total = 0;
             if (target.CanTakeAnyItemsExistingInMeFromOtherInventory(player, true, true))
             {
-                int before = CountItems(player);
+                Dictionary<string, int> before = CountItems(player, out List<string> order);
                 target.TakeAllItemsExistingInMeFromOtherInventory(player, true, true);
-                moved = before - CountItems(player);
+                Dictionary<string, int> after = CountItems(player, out _);
+                foreach (string id in order)
+                {
+                    after.TryGetValue(id, out int left);
+                    int n = before[id] - left;
+                    if (n > 0)
+                    {
+                        moved.Add(new KeyValuePair<string, int>(id, n));
+                        total += n;
+                    }
+                }
             }
-            Logger.LogInfo($"Stack to {chest.Data.id}: {moved} item(s) stored");
+            Logger.LogInfo($"Stack to {chest.Data.id}: {total} item(s) stored, {moved.Count} kind(s)");
             lastCanStack = CanStack(chest);
             chest.DrawWidgets();
-            if (showMessage.Value)
+            if (!showMessage.Value)
             {
-                Notify(moved > 0
-                    ? T($"Itens guardados: {moved}", $"Items stored: {moved}")
-                    : T("Nada para guardar neste baú", "Nothing to store in this chest"));
+                return;
+            }
+            if (total == 0)
+            {
+                Notify(T("Nada para guardar neste baú", "Nothing to store in this chest"));
+            }
+            else if (messageStyle.Value == MessageStyle.Total || !NotifyItems(moved))
+            {
+                Notify(T($"Itens guardados: {total}", $"Items stored: {total}"));
             }
         }
 
-        /// <summary>Units in the top level of an inventory (bags count as one; their contents are not touched).</summary>
-        private static int CountItems(Inventory inventory)
+        /// <summary>
+        /// Units per item id in the top level of an inventory, and the ids in inventory order (bags count as one item;
+        /// their contents are not touched by the move).
+        /// </summary>
+        private static Dictionary<string, int> CountItems(Inventory inventory, out List<string> order)
         {
-            int total = 0;
+            var counts = new Dictionary<string, int>();
+            order = new List<string>();
             List<Item> items = inventory?.Data?.Inventory;
             if (items == null)
             {
-                return 0;
+                return counts;
             }
             foreach (Item it in items)
             {
-                if (it != null && !it.IsEmpty)
+                if (it == null || it.IsEmpty || string.IsNullOrEmpty(it.id))
                 {
-                    total += Math.Max(1, it.Count);
+                    continue;
                 }
+                if (!counts.TryGetValue(it.id, out int have))
+                {
+                    order.Add(it.id);
+                }
+                counts[it.id] = have + Math.Max(1, it.Count);
             }
-            return total;
+            return counts;
         }
 
         // ------------------------------------------------------------------ hint row
@@ -260,6 +290,10 @@ namespace QuickStack
 
         private static MethodInfo notifyMethod;
         private static bool notifyLookedUp;
+        private static MethodInfo showNotificationMethod;
+        private static FieldInfo removeCountLabel;
+        private static FieldInfo addCountLabel;
+        private static int itemNotificationKind = -1;   // -1 not checked, 0 none, 1 "item removed" widget, 2 "item added" widget
 
         /// <summary>Shows a line in the game's own notification list (the one that says "inventory is full").</summary>
         private void Notify(string text)
@@ -288,6 +322,90 @@ namespace QuickStack
             }
         }
 
+        /// <summary>
+        /// One line per item in the game's notification list, built with the game's own item notification (icon, name,
+        /// amount) - the one shown when an item is picked up. Returns false when it cannot be used (the caller then
+        /// shows the total instead).
+        /// </summary>
+        private bool NotifyItems(List<KeyValuePair<string, int>> moved)
+        {
+            try
+            {
+                UINotificator notificator = UINotificator.Instance;
+                if (notificator == null || !ResolveItemNotification())
+                {
+                    return false;
+                }
+                foreach (KeyValuePair<string, int> kv in moved)
+                {
+                    UIBaseNotification line;
+                    FieldInfo labelField;
+                    if (itemNotificationKind == 1)
+                    {
+                        UIItemRemoveNotification n = LazyPooler.GetObject<UIItemRemoveNotification>();
+                        n.ItemId = kv.Key;
+                        n.DisplayingCount = kv.Value;
+                        line = n;
+                        labelField = removeCountLabel;
+                    }
+                    else
+                    {
+                        UIItemAddNotification n = LazyPooler.GetObject<UIItemAddNotification>();
+                        n.ItemId = kv.Key;
+                        n.DisplayingCount = kv.Value;
+                        line = n;
+                        labelField = addCountLabel;
+                    }
+                    showNotificationMethod.Invoke(notificator, new object[] { line });
+                    // The game writes "-26" / "+26" and hides the amount when it is 1: show the plain amount, always.
+                    if (labelField?.GetValue(line) is TMP_Text label)
+                    {
+                        label.gameObject.SetActive(true);
+                        label.text = kv.Value.ToString();
+                    }
+                }
+                return true;
+            }
+            catch (Exception e)
+            {
+                LogOnce("notify items", e);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Picks the game's widget for the item lines, once: the "item removed" one when the game has a pool for it
+        /// (the game never merges other notifications into it), otherwise the "item added" one.
+        /// </summary>
+        private bool ResolveItemNotification()
+        {
+            if (itemNotificationKind >= 0)
+            {
+                return itemNotificationKind > 0;
+            }
+            itemNotificationKind = 0;
+            showNotificationMethod = AccessTools.Method(typeof(UINotificator), "ShowNotification", new[] { typeof(UIBaseNotification) });
+            removeCountLabel = AccessTools.Field(typeof(UIItemRemoveNotification), "countLabel");
+            addCountLabel = AccessTools.Field(typeof(UIItemAddNotification), "countLabel");
+            var pools = AccessTools.Field(typeof(LazyPooler), "pools")?.GetValue(LazyPooler.Instance) as System.Collections.IDictionary;
+            if (showNotificationMethod == null || pools == null)
+            {
+                Logger.LogWarning("Item notifications are not available in this game version - showing the total instead.");
+                return false;
+            }
+            if (pools.Contains(typeof(UIItemRemoveNotification)))
+            {
+                itemNotificationKind = 1;
+            }
+            else if (pools.Contains(typeof(UIItemAddNotification)))
+            {
+                itemNotificationKind = 2;
+            }
+            Logger.LogInfo("Item notification widget: " + (itemNotificationKind == 1 ? "UIItemRemoveNotification"
+                : itemNotificationKind == 2 ? "UIItemAddNotification" : "none (showing the total instead)"));
+            return itemNotificationKind > 0;
+        }
+
         /// <summary>Brazilian Portuguese when the game is in Portuguese, English otherwise.</summary>
         private static string T(string pt, string en)
         {
@@ -302,6 +420,16 @@ namespace QuickStack
                 Logger.LogError($"{where}: {e}");
             }
         }
+    }
+
+    /// <summary>What the message shown after storing looks like.</summary>
+    public enum MessageStyle
+    {
+        /// <summary>One line per item: icon, name and amount.</summary>
+        Items,
+
+        /// <summary>A single line with the total number of items.</summary>
+        Total,
     }
 
     /// <summary>Adds the mod's row to the hint the game shows next to a chest.</summary>

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0
+
+- After storing, the message is now one line per item, with its icon, name and amount, in the game's own notification
+  list (the widget the game uses for item notifications). Before, it was a single "Items stored: N" line.
+- New setting `MessageStyle`: `Items` (default, one line per item) or `Total` (the single line of 0.1.x).
+  `ShowMessage = false` still turns the message off.
+
 ## 0.1.1
 
 - The option now has the same name as the button inside the chest window ("Move all identical items", in the game's
